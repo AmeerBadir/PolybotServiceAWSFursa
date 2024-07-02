@@ -111,7 +111,7 @@ class ObjectDetectionBot(Bot):
         # upload the photo to S3
         if self.is_current_msg_photo(msg):
             photo_path = self.download_user_photo(msg)
-            img_name = os.path.basename(photo_path)
+            img_name = f"{os.path.basename(photo_path)}"
             s3 = boto3.client('s3')
             images_bucket = os.environ['BUCKET_NAME']
 
@@ -119,15 +119,15 @@ class ObjectDetectionBot(Bot):
                 s3.upload_file(photo_path, images_bucket, img_name)
                 self.send_text(msg['chat']['id'], "Image uploaded successfully")
                 #  send a job to the SQS queue
-                # TODO send message to the Telegram end-user (e.g. Your image is being processed. Please wait...)
-                self.send_text(msg['chat']['id'], "Your image is being processed. Please wait...")
+                #  send message to the Telegram end-user (e.g. Your image is being processed. Please wait...)
                 response = self.send_job_to_sqs(img_name, msg['chat']['id'])
-                total_object_number, object_dictionary = get_result(response.json())
-                if total_object_number is None and object_dictionary == {}:
-                    self.send_text(msg['chat']['id'], "failed to upload image")
-                else:
-                    response_msg = summary_msg(total_object_number, object_dictionary)
-                    self.send_text(msg['chat']['id'], response_msg)
+                self.send_text(msg['chat']['id'], "Your image is being processed. Please wait...")
+                # total_object_number, object_dictionary = get_result(response.json())
+                # if total_object_number is None and object_dictionary == {}:
+                #     self.send_text(msg['chat']['id'], "failed to upload image")
+                # else:
+                #     response_msg = summary_msg(total_object_number, object_dictionary)
+                #     self.send_text(msg['chat']['id'], response_msg)
 
 
             except Exception as e:

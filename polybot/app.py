@@ -50,17 +50,46 @@ def webhook():
     return 'Ok'
 
 
+def get_result(respond):
+    if "labels" in respond:
+        try:
+            dict_objects = dict()
+            total_count = 0
+            for lab in respond['labels']:
+                item_class = lab['class']
+                if item_class in dict_objects:
+                    dict_objects[item_class] += 1
+                else:
+                    dict_objects[item_class] = 1
+                total_count += 1
+            return total_count, dict_objects
+        except Exception as e:
+            return None, {}
+def summary_msg(total_object_number, object_dictionary):
+    msg = f'We detect {total_object_number} objects.\n'
+    for key, val in object_dictionary.items:
+        object_count = f'object {key} found {val} times.\n'
+        msg += object_count
+    return msg
+
 @app.route(f'/results', methods=['POST'])
 def results():
     prediction_id = request.args.get('predictionId')
 
     dynamodb = boto3.resource('dynamodb')
-    # TODO use the prediction_id to retrieve results from DynamoDB and send to the end-user
     dyanamo_db = dynamodb.Table("ameerbadir-aws")
     response = dyanamo_db.get_item(key={"prediction_id": prediction_id})
-    chat_id = response['Item']['chatId']
-    text_results = response['Item']['results']
-    bot.send_text(chat_id, text_results)
+    try:
+        chat_id = response['Item']['chatId']
+        # text_results = response['Item']['results']
+        all_labels = response['Item']['labels']
+        all_items = [label['class'] for label in all_labels]
+        ret_msg = f'we found {len(all_items)} objects:\n'
+        ret_msg += "\n".join(all_items)
+        bot.send_text(chat_id, ret_msg)
+c
+    except Exception as e:
+        return f'item not found: {e}', 404
     return 'Ok'
 
 
