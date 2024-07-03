@@ -87,7 +87,7 @@ def results():
         ret_msg = f'we found {len(all_items)} objects:\n'
         ret_msg += "\n".join(all_items)
         bot.send_text(chat_id, ret_msg)
-c
+
     except Exception as e:
         return f'item not found: {e}', 404
     return 'Ok'
