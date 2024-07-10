@@ -14,4 +14,4 @@ apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docke
 
 usermod -aG docker ubuntu
 
-docker run -d --name yolo5_container --restart always  -e REGION="${region_name}" -e BUCKET_NAME="${bucket_name}" -e SQS_QUEUE_NAME="${sqs_queue_url}" -e DB_TABLE_NAME="${dynamodb}" -e ameerbadir/ameerb_tf_yolo:0.0.1
+docker run -d -p 8443:8443 --name polybot3 --restart always -e TELEGRAM_APP_URL=https://dev-tel.ameer-domain.click:8443 -e BUCKET_NAME="${bucket_name}" -e REGION="${region_name}" -e SQS_QUEUE="${sqs_queue_url}" -e DB_TABLE_NAME="${dynamodb}" ameerbadir/ameerb_tf_poly:0.0.1
