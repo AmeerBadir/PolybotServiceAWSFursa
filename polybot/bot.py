@@ -91,11 +91,14 @@ def summary_msg(total_object_number, object_dictionary):
 
 class ObjectDetectionBot(Bot):
     def send_job_to_sqs(self, img_name, chat_id):
+        region = os.environ['REGION']
+        my_sqs = os.environ['SQS_QUEUE']
+
         try:
-            sqs = boto3.client('sqs')
-            queue_url = "https://sqs.us-east-1.amazonaws.com/700935310038/ameerbadir-sqs"
+            sqs = boto3.client('sqs', region_name=region)
+            queue_url = my_sqs
             job_message = {
-                'image_key': img_name,
+                'imgName': img_name,
                 'chat_id': chat_id
             }
             respone = sqs.send_message(QueueUrl=queue_url, MessageBody=json.dumps(job_message))

@@ -1,3 +1,4 @@
+import ast
 import json
 
 import flask
@@ -7,10 +8,13 @@ from bot import ObjectDetectionBot
 import boto3
 from botocore.exceptions import ClientError
 
+region = os.environ['REGION']
+
+db_table_name = os.environ['DB_TABLE_NAME']
 
 def get_secret():
     secret_name = "ameer-tel-token"
-    region_name = "us-east-1"
+    region_name = region
 
     # Create a Secrets Manager client
     session = boto3.session.Session()
@@ -65,6 +69,8 @@ def get_result(respond):
             return total_count, dict_objects
         except Exception as e:
             return None, {}
+
+
 def summary_msg(total_object_number, object_dictionary):
     msg = f'We detect {total_object_number} objects.\n'
     for key, val in object_dictionary.items:
@@ -72,21 +78,42 @@ def summary_msg(total_object_number, object_dictionary):
         msg += object_count
     return msg
 
+
 @app.route(f'/results', methods=['POST'])
 def results():
     prediction_id = request.args.get('predictionId')
+    chat_id = request.args.get('chatId')
 
-    dynamodb = boto3.resource('dynamodb')
-    dyanamo_db = dynamodb.Table("ameerbadir-aws")
-    response = dyanamo_db.get_item(key={"prediction_id": prediction_id})
+    dynamodb = boto3.resource('dynamodb', region_name=region)
+    dyanamo_db = dynamodb.Table(db_table_name)
+    response = dyanamo_db.get_item(Key={"prediction_id": prediction_id})
     try:
-        chat_id = response['Item']['chatId']
         # text_results = response['Item']['results']
         all_labels = response['Item']['labels']
-        all_items = [label['class'] for label in all_labels]
-        ret_msg = f'we found {len(all_items)} objects:\n'
-        ret_msg += "\n".join(all_items)
-        bot.send_text(chat_id, ret_msg)
+        # all_items = [label['class'] for label in all_labels]
+        # ret_msg = f'we found {len(all_items)} objects:\n'
+        # ret_msg += "\n".join(all_items)
+        objects = {}
+        for label in all_labels:
+            new_label_dict = ast.literal_eval(label)
+            object_name = new_label_dict['class']
+            if object_name in objects:
+                objects[object_name] += 1
+            else:
+                objects[object_name] = 1
+
+        msg_to_send = f"We have found {len(all_labels)} objects in the image\n\nDetected Objects:\n\n"
+
+        descending_dict = sorted(objects.items(), key=lambda x: x[1], reverse=True)
+        for object_name, count in descending_dict:
+            if count > 1:
+                msg_to_send += f'{object_name}s: {count}\n'
+            else:
+                msg_to_send += f'{object_name}: {count}\n'
+
+        msg_to_send += "\nObject Detection completed!"
+        bot.send_text(chat_id, msg_to_send)
+
 
     except Exception as e:
         return f'item not found: {e}', 404
