@@ -11,13 +11,15 @@ import requests
 images_bucket = os.environ['BUCKET_NAME']
 queue_name = os.environ['SQS_QUEUE_NAME']
 
-sqs_client = boto3.client('sqs', region_name='us-east-1')
+region = os.environ['REGION']
+db_table_name = os.environ['DB_TABLE_NAME']
+sqs_client = boto3.client('sqs', region_name=region)
 
 with open("data/coco128.yaml", "r") as stream:
     names = yaml.safe_load(stream)['names']
 session = boto3.Session()
-s3 = session.client('s3', 'us-east-1')
-dynamo_db = boto3.client('dynamodb', region_name='us-east-1')
+s3 = session.client('s3', region)
+dynamo_db = boto3.client('dynamodb', region_name=region)
 
 def download_img_s3(img_name):
     try:
@@ -111,7 +113,7 @@ def consume():
 
                 # store the prediction_summary in a DynamoDB table
                 try:
-                    db = "ameerbadir-aws"
+                    db = db_table_name
                     response =dynamo_db.put_item(
                         TableName=db, Item=prediction_summary
                     )
